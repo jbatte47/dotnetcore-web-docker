@@ -1,12 +1,20 @@
-FROM microsoft/dotnet:onbuild
+FROM microsoft/dotnet:1.0-sdk-msbuild
 
-WORKDIR /dotnetapp/tls
-RUN [ "/bin/bash", "/dotnetapp/ssh/generateCert.sh", "sample", "1f16b18" ]
+WORKDIR /app
 
-WORKDIR /dotnetapp
-RUN dotnet build
+COPY dotnetcore-web-docker.csproj .
+RUN dotnet restore
 
-ENV CERT_PATH /dotnetapp/tls/sample_1f16b18.p12
-ENV CERT_PASSWORD 1f16b18
+COPY . .
 
-CMD dotnet run
+WORKDIR /app/tls
+RUN [ "/bin/bash", "/app/ssh/generateCert.sh", "sample", "7da3043" ]
+
+WORKDIR /app
+RUN dotnet publish -c Release -o bin
+
+ENV CERT_PATH /app/tls/sample_7da3043.p12
+ENV CERT_PASSWORD 7da3043
+ENV HTTPS_PORT 9999
+
+CMD [ "dotnet", "bin/dotnetcore-web-docker.dll" ]

@@ -21,13 +21,13 @@ docker build -t whatever-you-want .
 ### Run it!
 
 ```bash
-docker run -it -p 443:9999 -e HTTPS_PORT=9999 whatever-you-want
+docker run -it -p 443:9999 whatever-you-want
 ```
 
 ### Test it!
 
 ```bash
-curl -k https://$(docker-machine ip default)/health-check.html
+curl -k https://localhost/health-check.html
 ```
 
 ```html
@@ -43,9 +43,10 @@ curl -k https://$(docker-machine ip default)/health-check.html
   </body>
 </html>
 ```
+=========
 
 ```bash
-curl -k https://$(docker-machine ip default)/api/hello/World
+curl -k https://localhost/api/hello/World
 ```
 
 ```
