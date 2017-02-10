@@ -9,6 +9,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
+
 namespace Batte.Examples
 {
   public class Program
@@ -20,34 +23,42 @@ namespace Batte.Examples
       .Build()
       .Run();
 
+    public IContainer Container { get; private set; }
     public IConfigurationRoot Configuration { get; private set; }
     public IHostingEnvironment HostEnvironment { get; private set; }
 
     public Program(IHostingEnvironment environment)
     {
       HostEnvironment = environment;
-
       Configuration = new ConfigurationBuilder()
         .SetBasePath(Directory.GetCurrentDirectory())
-        .AddJsonFile("appsettings.json")
+        .AddJsonFile("config.json")
         .AddEnvironmentVariables()
         .Build();
     }
 
-    public void ConfigureServices(IServiceCollection services) => services
-      .AddRouting(options => options.LowercaseUrls = true)
-      .AddOptions()
-      .AddMvc();
+    public IServiceProvider ConfigureServices(IServiceCollection services)
+    {
+      services.AddRouting(options => options.LowercaseUrls = true)
+        .AddOptions()
+        .AddMvc();
 
-    public void Configure(IApplicationBuilder builder) => builder
-      .UseStaticFiles(new StaticFileOptions
+      var builder = new ContainerBuilder();
+      builder.Populate(services);
+      Container = builder.Build();
+      return new AutofacServiceProvider(Container);
+    }
+
+    public void Configure(IApplicationBuilder app, ILoggerFactory loggers, IApplicationLifetime lifetime)
+    {
+      app.UseStaticFiles(new StaticFileOptions
       {
         FileProvider = new PhysicalFileProvider(HostEnvironment.ContentRootPath),
         RequestPath = new PathString(string.Empty)
-      })
-      .UseMvc()
-      .ApplicationServices.GetService<ILoggerFactory>()
-        .AddConsole(Configuration.GetSection("Logging"))
-        .AddDebug();
+      }).UseMvc();
+
+      loggers.AddConsole(Configuration.GetSection("Logging"));
+      lifetime.ApplicationStopped.Register(Container.Dispose);
+    }
   }
 }
